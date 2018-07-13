@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ToDo 個人MEMO</title>
+</head>
+<body>
+    <div id="app">
+
+        <router-view></router-view>
+
+
+
+    </div>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.16/vue.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.0.1/vue-router.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/vuex/3.0.1/vuex.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js'></script>
+    <script>
+        let List = {
+
+            template:  `
+            <div>
+                <h1>MEMO列表</h1>
+                <p>
+                    Title :
+                    <input type="text" v-model.trim="inputTitle">
+                </p>
+                <p>
+                    Content :
+                    <textarea rows="4" cols="50" name="comment" form="usrform" v-model.trim="inputContent"></textarea>
+                    <button v-on:click="createHandler">CREATE</button>
+                </p>
+                <ol>
+                    <li v-for="(content, index) in contents">
+                        <h3>{{ content.title }} </h3>
+                        <p>{{ content.content }}</p>
+                        <button v-on:click="updateHandler(index)">UPDATE</button>
+                        <button v-on:click="deleteHandler(index)">DELETE</button>
+                    </li>
+                </ol>
+            </div>`,            
+            data: function(){
+               return {
+                inputTitle: '',
+                inputContent: '',
+                contents: []
+               }
+            },
+            methods: {
+                createHandler() {
+                    if(!this.inputTitle) return false
+                    if(!this.inputContent) return false
+                    axios.post('http://localhost:3000/contents',{
+                        title: this.inputTitle,
+                        content: this.inputContent
+                    }).then((res)=>{
+                        this.inputTitle = ''
+                        this.inputContent = ''
+                        this.contents.push(res.data)
+                    })
+                },
+                updateHandler(index) {
+                    let updateTarget = this.contents[index]
+                    console.log(this)
+                    //push會有上一頁的紀錄
+                    // this.$router.push({path: `/update/${updateTarget.id}`})
+                    //資料＋入口概念
+                    this.$router.push({name: 'update', params: {id: updateTarget.id}})
+                    // this.$router.replace({path: `/update/${updateTarget.id}`})
+
+                },
+                deleteHandler(index) {
+                    let deleteTarget = this.contents[index]
+                    axios.delete(`http://localhost:3000/contents/${deleteTarget.id}`).then((res)=>{
+                        this.contents.splice(index, 1)
+                    })
+                },
+            },
+            mounted() {
+                axios.get('http://localhost:3000/contents').then((res)=>{
+                    this.contents = res.data
+                })
+            }
+
+        }
+        let Edit = {
+            template:  `
+            <div>
+                <h1>編輯MEMO</h1>
+                <p>
+                    Title :
+                    <input type="text" v-model.trim="inputTitle">
+                </p>
+                <p>
+                    Content :
+                    <textarea rows="4" cols="50" name="comment" form="usrform" v-model.trim="inputContent"></textarea>
+                    <button v-on:click="createHandler">修改</button>
+                </p>
+            </div>`,
+            
+        }
+
+        let router = new VueRouter({
+            routes:[
+                {
+                    path:'/',
+                    name: 'list',
+                    component: List
+                },
+                {
+                    path:'/update/:id',
+                    name: 'update',
+                    component: Edit
+                },
+                {
+                    path:'*',
+                    redirect: '/'
+                }
+            ]
+        })
+
+        new Vue({
+            el: '#app',
+            data: {
+                inputTitle: '',
+                inputContent: '',
+                contents: []
+            },
+            router: router,
+        })
+    </script>
+
+</body>
+</html>

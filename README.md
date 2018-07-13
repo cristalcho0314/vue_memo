@@ -1,2 +1,1 @@
-# vue_memo
-vue practice
+# Practicing Git
