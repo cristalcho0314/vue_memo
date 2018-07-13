@@ -4,62 +4,134 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <title>ToDo 個人MEMO</title>
 </head>
 <body>
     <div id="app">
-
         <router-view></router-view>
-
-
+        <!-- <el-row>
+            <el-col :span="8" v-for="(content, index) in contents" :key="index" :offset="index > 0 ? 2 : 0">
+              <el-card :body-style="{ padding: '0px' }">
+                <p>{{ content.content }}</p>
+                <div style="padding: 14px;">
+                  <span>{{ content.title }}</span>
+                  <div class="bottom clearfix">
+                    <time class="time">{{ content.currentDate }}</time>
+                    <el-button type="primary" icon="el-icon-edit" circle v-on:click="updateHandler(index)"></el-button>
+                    <el-button type="danger" icon="el-icon-delete" circle v-on:click="deleteHandler(index)"></el-button>                  </div>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row> -->
+          <!-- <ol>
+            <li v-for="(content, index) in contents">
+                <h3>{{ content.title }} </h3>
+                <p>{{ content.content }}</p>
+                <el-button type="primary" icon="el-icon-edit" circle v-on:click="updateHandler(index)"></el-button>
+                <el-button type="danger" icon="el-icon-delete" circle v-on:click="deleteHandler(index)"></el-button>
+            </li>
+        </ol> -->
 
     </div>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.16/vue.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.0.1/vue-router.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/vuex/3.0.1/vuex.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js'></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>    
     <script>
         let List = {
 
             template:  `
-            <div>
-                <h1>MEMO列表</h1>
-                <p>
-                    Title :
-                    <input type="text" v-model.trim="inputTitle">
-                </p>
-                <p>
-                    Content :
-                    <textarea rows="4" cols="50" name="comment" form="usrform" v-model.trim="inputContent"></textarea>
-                    <button v-on:click="createHandler">CREATE</button>
-                </p>
-                <ol>
-                    <li v-for="(content, index) in contents">
-                        <h3>{{ content.title }} </h3>
-                        <p>{{ content.content }}</p>
-                        <button v-on:click="updateHandler(index)">UPDATE</button>
-                        <button v-on:click="deleteHandler(index)">DELETE</button>
-                    </li>
-                </ol>
+            <div class="memo__body">
+                <h2>MEMO列表</h2>
+                <el-row :gutter="20">
+                    <el-col :span="5">
+                        <p>
+                            Title :
+                            <el-input
+                            placeholder="请输入内容"
+                            v-model.trim="inputTitle">
+                            </el-input>
+                        </p>
+                        <p>
+                            Content :
+                            <el-input
+                            type="textarea"
+                            :rows="3"
+                            placeholder="请输入内容"
+                            v-model.trim="inputContent">
+                            </el-input>
+                            <el-button type="primary" v-on:click="createHandler">CREATE</el-button>
+                        </p>
+                    </el-col>
+                    <el-col :span="15">
+                        <el-table
+                        :data="contents"
+                        style="width: 100%">
+                        <el-table-column
+                            prop="title"
+                            label="標題"
+                            width="180">
+                        </el-table-column>
+                        <el-table-column
+                            prop="content"
+                            label="內容"
+                            >
+                        </el-table-column>
+
+                        </el-table>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">                    
+                    <el-col :span="5" v-for="(content, index) in contents" :key="index" >
+                        <el-card :body-style="{ padding: '0px' }">
+                            <p>{{ content.content }}</p>
+                            <div style="padding: 15px;">
+                            <span>{{ content.title }}</span>
+                            <div class="bottom clearfix">
+                                <time class="time">{{ content.currentDate }}</time>
+                                <el-button icon="el-icon-edit" circle v-on:click="updateHandler(index)"></el-button>
+                                <el-button icon="el-icon-delete" circle v-on:click="deleteHandler(index)"></el-button>                  </div>
+                            </div>
+                        </el-card>
+                    </el-col>
+                </el-row>
+
             </div>`,            
             data: function(){
                return {
                 inputTitle: '',
                 inputContent: '',
-                contents: []
+                currentDate: ''
                }
+            },
+            computed: {
+                contents: {
+                    get: function () {
+                        return this.$store.state.contents
+                    },
+                    set: function () {
+                    },
+                }
             },
             methods: {
                 createHandler() {
                     if(!this.inputTitle) return false
                     if(!this.inputContent) return false
+
                     axios.post('http://localhost:3000/contents',{
                         title: this.inputTitle,
-                        content: this.inputContent
-                    }).then((res)=>{
+                        content: this.inputContent,
+                        currentDate: new Date(),
+                    }).then((res)=>{                    
                         this.inputTitle = ''
                         this.inputContent = ''
-                        this.contents.push(res.data)
+                        this.currentDate = ''
+                        // this.contents.push(res.data)
+                        // this.$store.commit(`addContents`, res.data)
+                        this.$store.commit('addContent', res.data)
                     })
                 },
                 updateHandler(index) {
@@ -67,16 +139,17 @@
                     console.log(this)
                     //push會有上一頁的紀錄
                     // this.$router.push({path: `/update/${updateTarget.id}`})
-                    //資料＋入口概念
-                    this.$router.push({name: 'update', params: {id: updateTarget.id}})
-                    // this.$router.replace({path: `/update/${updateTarget.id}`})
+                        //資料＋入口概念
+                    // this.$router.push({name: 'update', params: {id: updateTarget.id}})
+                    this.$router.replace({path: `/update/${updateTarget.id}`})
 
                 },
                 deleteHandler(index) {
-                    let deleteTarget = this.contents[index]
-                    axios.delete(`http://localhost:3000/contents/${deleteTarget.id}`).then((res)=>{
-                        this.contents.splice(index, 1)
-                    })
+                    // let deleteTarget = this.contents[index]
+                    // axios.delete(`http://localhost:3000/contents/${deleteTarget.id}`).then((res)=>{
+                    //     this.contents.splice(index, 1)
+                    // })
+                    this.$store.dispatch('CONTENT_DELETE', { target })
                 },
             },
             mounted() {
@@ -89,7 +162,7 @@
         let Edit = {
             template:  `
             <div>
-                <h1>編輯MEMO</h1>
+                <h2>編輯MEMO</h2>
                 <p>
                     Title :
                     <input type="text" v-model.trim="inputTitle">
@@ -102,6 +175,41 @@
             </div>`,
             
         }
+
+        let store = new Vuex.Store({
+             //嚴格模式只在開發時使用，否則會很耗效能
+            strict: true,
+            state: {
+                contents: []
+            },
+            mutations: {
+                setContents(state, data){
+                    state.contents = data
+
+                },
+                addContents(state, data){
+                    state.contents.push(data) 
+
+                },
+                deleteContents(state, data){
+                    state.contents.push(data)
+
+                }
+            },
+            actions:{
+                CONTENTS_READ: (context) => {
+                    return  axios.get('http://localhost:3000/contents').then((res)=>{
+                        context.commit('setContents', res.data)
+                    })
+                },
+                CONTENT_DELETE: (context, { target } ) => {
+                    let index = content.state.contents.indexOf(target)
+                    return axios.delete('http://localhost:3000/contents' + target.id).then(()=>{
+                        context.commit('deleteContents', res.data)
+                    })
+                }
+            }
+        })
 
         let router = new VueRouter({
             routes:[
@@ -124,12 +232,11 @@
 
         new Vue({
             el: '#app',
-            data: {
-                inputTitle: '',
-                inputContent: '',
-                contents: []
-            },
-            router: router,
+            router,
+            store,
+            mounted() {
+                this.$store.dispatch('CONTENTS_READ')
+            }
         })
     </script>
 

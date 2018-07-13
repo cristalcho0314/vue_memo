@@ -1,0 +1,38 @@
+*{
+
+    font-family: "PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
+}
+
+.time {
+    font-size: 13px;
+    color: #999;
+  }
+  
+.bottom {
+margin-top: 13px;
+line-height: 12px;
+}
+
+.button {
+padding: 0;
+float: right;
+}
+
+.clearfix:before,
+.clearfix:after {
+    display: table;
+    content: "";
+}
+
+.clearfix:after {
+    clear: both
+}
+
+.el-col {
+    margin: 10px;
+}
+
+.el-card__body p {
+    padding: 20px;
+    font-size: 16px;
+}
