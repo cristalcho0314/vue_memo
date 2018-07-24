@@ -42,7 +42,6 @@
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>    
     <script>
         let List = {
-
             template:  `
             <div class="memo__body">
                 <h2>MEMO列表</h2>
@@ -80,7 +79,16 @@
                             label="內容"
                             >
                         </el-table-column>
+                        <el-table-column
+                            label="編輯"
+                            width="100px"
+                            >
+                        <template slot-scope="scope">
+                            <el-button icon="el-icon-edit" size="small" circle v-on:click="updateHandler(scope.$index)"></el-button>
+                            <el-button icon="el-icon-delete" size="small" circle v-on:click="deleteHandler(scope.$index)"></el-button>
+                        </template>
 
+                        </el-table-column>
                         </el-table>
                     </el-col>
                 </el-row>
@@ -92,13 +100,11 @@
                             <span>{{ content.title }}</span>
                             <div class="bottom clearfix">
                                 <time class="time">{{ content.currentDate }}</time>
-                                <el-button icon="el-icon-edit" circle v-on:click="updateHandler(index)"></el-button>
-                                <el-button icon="el-icon-delete" circle v-on:click="deleteHandler(index)"></el-button>                  </div>
+                            </div>
                             </div>
                         </el-card>
                     </el-col>
                 </el-row>
-
             </div>`,            
             data: function(){
                return {
@@ -120,7 +126,6 @@
                 createHandler() {
                     if(!this.inputTitle) return false
                     if(!this.inputContent) return false
-
                     axios.post('http://localhost:3000/contents',{
                         title: this.inputTitle,
                         content: this.inputContent,
@@ -136,20 +141,19 @@
                 },
                 updateHandler(index) {
                     let updateTarget = this.contents[index]
-                    console.log(this)
+                    console.log(updateTarget)
                     //push會有上一頁的紀錄
                     // this.$router.push({path: `/update/${updateTarget.id}`})
                         //資料＋入口概念
-                    // this.$router.push({name: 'update', params: {id: updateTarget.id}})
-                    this.$router.replace({path: `/update/${updateTarget.id}`})
-
+                    this.$router.push({name: 'update', params: {id: updateTarget.id}})
+                    // this.$router.replace({path: `/update/${updateTarget.id}`})
                 },
                 deleteHandler(index) {
-                    // let deleteTarget = this.contents[index]
+                    let deleteTarget = this.contents[index]
                     // axios.delete(`http://localhost:3000/contents/${deleteTarget.id}`).then((res)=>{
                     //     this.contents.splice(index, 1)
                     // })
-                    this.$store.dispatch('CONTENT_DELETE', { target })
+                    this.$store.dispatch('CONTENT_DELETE', { deleteTarget })
                 },
             },
             mounted() {
@@ -157,7 +161,6 @@
                     this.contents = res.data
                 })
             }
-
         }
         let Edit = {
             template:  `
@@ -165,17 +168,59 @@
                 <h2>編輯MEMO</h2>
                 <p>
                     Title :
-                    <input type="text" v-model.trim="inputTitle">
+                    <input type="text" v-model.trim="editTitle">
                 </p>
                 <p>
                     Content :
-                    <textarea rows="4" cols="50" name="comment" form="usrform" v-model.trim="inputContent"></textarea>
-                    <button v-on:click="createHandler">修改</button>
+                    <textarea rows="4" cols="50" v-model.trim="editContent"></textarea>
+                    <button v-on:click="updateHandler()">修改</button>
                 </p>
             </div>`,
-            
-        }
+            data: function(){
+               return {
+                editTitle: '',
+                editContent: '',
+               }
+            },
+            computed: {
+                content(){
+                    return this.$store.state.contents.find((item) => {
+                        return item.id == this.$route.params.id
+                    })
+                }
+            },
+            methods: {
+                updateHandler() {
+                    this.$store.dispatch('CONTENT_UPDATE', {
+                        title: this.editTitle,
+                        content: this.editContent,
+                        id: this.content.id
 
+                    }).then(()=>{
+                        this.$router.push({ path: '/'})
+                    })
+                }
+            },
+            mounted() {
+                if(!this.content) return this.$router.replace({path: '/' })
+                this.editTitle = this.content.title
+                this.editContent = this.content.content
+                // this.editTitle = this.$store.state.contents.fliter((item)=>{
+                //     return item.id == this.$route.params.id
+                // })[0].content
+
+            },
+
+            // computed: {
+            //     contents: {
+            //         get: function () {
+            //             return this.$store.state.contents
+            //         },
+            //         set: function () {
+            //         },
+            //     }
+            // },            
+        }
         let store = new Vuex.Store({
              //嚴格模式只在開發時使用，否則會很耗效能
             strict: true,
@@ -185,15 +230,16 @@
             mutations: {
                 setContents(state, data){
                     state.contents = data
-
                 },
-                addContents(state, data){
+                addContent(state, data){
                     state.contents.push(data) 
-
                 },
-                deleteContents(state, data){
-                    state.contents.push(data)
-
+                deleteContent(state, data){
+                    state.contents.splice(data, 1)
+                },
+                updateContent(state, { item , title, content }){
+                        item.title = title
+                        item.content = content                
                 }
             },
             actions:{
@@ -202,15 +248,27 @@
                         context.commit('setContents', res.data)
                     })
                 },
-                CONTENT_DELETE: (context, { target } ) => {
-                    let index = content.state.contents.indexOf(target)
-                    return axios.delete('http://localhost:3000/contents' + target.id).then(()=>{
-                        context.commit('deleteContents', res.data)
+                CONTENT_DELETE: (context, { deleteTarget } ) => {
+                    console.log('DELETE')
+                    let index = context.state.contents.indexOf(deleteTarget)
+                    if(index == -1) return false
+                    return axios.delete('http://localhost:3000/contents/' + deleteTarget.id).then((res)=>{
+                        context.commit('deleteContent', index)
                     })
-                }
+                },
+                CONTENT_UPDATE: (context, { title , content , id }) => {
+                    console.log('UPDATE')
+                    let item = context.state.contents.find((item)=>{
+                        return item.id == id
+                    })
+                    if (!item) return false
+                    return  axios.patch('http://localhost:3000/contents/' + item.id, { title: title ,content: content  } ).then((res)=>{
+
+                        context.commit('updateContent', { item , title, content })
+                    })
+                },
             }
         })
-
         let router = new VueRouter({
             routes:[
                 {
@@ -229,7 +287,6 @@
                 }
             ]
         })
-
         new Vue({
             el: '#app',
             router,
